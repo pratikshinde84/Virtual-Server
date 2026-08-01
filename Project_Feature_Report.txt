@@ -1,0 +1,300 @@
+PROJECT FEATURE REPORT
+======================
+Project Name: Quick Connect Ease / Secure Server
+Workspace Folder: SKIPPS_QCE_FINAL
+
+1. What this project is
+-----------------------
+This Android application is designed to act as a remote-control client for a Linux/Unix server. The app lets a user connect to a remote server over SSH, send commands, upload files, download files, and control the server's power state (wake/sleep). In simple terms, it is a mobile dashboard for managing a remote machine.
+
+The app uses:
+- Android UI screens and fragments
+- SharedPreferences to save connection settings locally
+- JSch library for SSH and SFTP communication
+- AsyncTask background threads for network operations so the UI stays responsive
+
+2. Why the app exists
+---------------------
+The app is built for convenience. Instead of manually logging into a remote server from a desktop, the user can use a phone to:
+- manage a home server or lab machine
+- wake the machine over Wake-on-LAN
+- put it to sleep using systemctl suspend
+- run shell commands remotely
+- transfer files to and from the server
+
+The main idea is to make remote server control easy from a mobile device.
+
+3. How the app is organized
+---------------------------
+The project has two main parts:
+
+A. Android UI layer
+- Activities handle full-screen screens like login, settings, splash, manual, about, and contact pages.
+- Fragments handle the main feature pages that appear inside the main navigation drawer.
+
+B. Utility layer
+- SSH classes manage the connection to the remote server.
+- File classes handle upload/download/list operations through SFTP.
+- Power classes handle Wake-on-LAN and suspend commands.
+- SharedPreferenceManager stores user settings such as IP, username, password, port, and remote path.
+
+4. Startup and login flow
+-------------------------
+The application starts with SplashActivity.
+
+What happens:
+- SplashActivity shows a splash screen animation.
+- After a short delay, it checks whether the app has already been initialized.
+- If this is the first launch, it navigates to SetPasswordActivity.
+- Otherwise, it opens LoginActivity.
+
+SetPasswordActivity:
+- Lets the user create an app password.
+- Validates that the password has at least 8 characters, includes a letter, a digit, and a special character.
+- Saves the password to SharedPreferences.
+- Then moves the user to LoginActivity.
+
+LoginActivity:
+- Provides a standard login button.
+- Also supports fingerprint login using Android biometric APIs.
+- Once login is successful, it opens MainActivity and initializes the SSH connection.
+
+Why this happens:
+- The app wants a simple entry barrier and also a basic protected access layer.
+- Fingerprint support is included for convenience and a more modern login experience.
+
+5. Main navigation structure
+----------------------------
+MainActivity is the central screen after login.
+
+It contains:
+- a navigation drawer
+- a toolbar with menu options
+- five main feature sections:
+  - Power Management
+  - Upload File
+  - SSH
+  - Download File
+  - HTTP
+
+The navigation drawer allows the user to switch between features quickly.
+
+The top-right menu contains shortcuts to:
+- Manual
+- About Us
+- Contact Us
+- Settings
+- Logout
+
+When the user presses back twice, the app asks whether to exit and, if auto-sleep is enabled, it triggers a sleep command before closing.
+
+6. Configuration screen
+-----------------------
+ConfigActivity is the settings page.
+
+It collects and stores:
+- IP address of the server
+- MAC address for Wake-on-LAN
+- SSH port (default 22)
+- username
+- password
+- remote path for file uploads
+
+Why this matters:
+- The app needs these values to connect to the server and perform remote operations.
+- The values are loaded from SharedPreferences so the user does not need to enter them every time.
+
+What happens when the user saves settings:
+- The values are written to SharedPreferences.
+- An SSHInitTask runs to create and connect the SSH session using the saved values.
+
+7. SSH connection mechanism
+---------------------------
+The SSH system is implemented through the following classes:
+- SSHManager
+- SSHInitTask
+- SSHFragment
+
+SSHManager:
+- Holds the single active Session object.
+- Provides methods to create the session, connect, and disconnect.
+- It uses JSch to set up SSH authentication and disables strict host key checking for convenience.
+
+SSHInitTask:
+- Runs in the background using AsyncTask.
+- Reads user settings from SharedPreferences.
+- Creates the SSH session and connects to the remote server.
+- Shows a toast message about whether the connection succeeded.
+
+Why this is important:
+- All remote actions depend on having a live SSH session.
+- The app tries to initialize that connection automatically whenever configuration is saved or the user logs in.
+
+8. SSH command execution feature
+--------------------------------
+The SSH feature is implemented by SSHFragment.
+
+What it does:
+- Shows an input box where the user can type a shell command.
+- When the user presses the send button, the app runs the command on the remote server.
+- The output is displayed in a text view.
+
+How it works:
+- The app opens an exec channel over the SSH session.
+- It sends the command to the server.
+- It reads the output stream.
+- It updates the UI with the response.
+
+Why this is useful:
+- It gives the user direct remote command access without needing a terminal on a computer.
+
+9. Power management feature
+---------------------------
+Power management is one of the main features. It is handled by the Power_Mgmt_Fragment and the power utility classes.
+
+Features:
+- Power off / sleep server
+- Power on / wake server
+- Auto-sleep toggle
+
+Sleep operation:
+- The app runs a command such as "sudo -S -p '' systemctl suspend" over SSH.
+- It sends the password through the command stream so the remote machine can authenticate the sudo request.
+
+Wake-on-LAN operation:
+- The app builds a magic packet from the MAC address.
+- It sends the packet to the server's broadcast address over UDP port 9.
+- This is a standard Wake-on-LAN method.
+
+Auto-sleep toggle:
+- A simple boolean flag is stored in the fragment.
+- When the user exits the app, if auto-sleep is enabled, the app will trigger the sleep command.
+
+Why this feature exists:
+- It allows the user to control a remote machine even if it is not physically accessible.
+
+10. Upload file feature
+----------------------
+The upload feature is implemented by Upload_File_Fragment and UploadTask.
+
+What the user does:
+- Clicks Select File.
+- Chooses a file from the device.
+- Clicks Upload.
+
+How it works:
+- The app opens the Android file picker.
+- It gets the selected file URI.
+- It reads the file content as an input stream.
+- It opens an SFTP channel over the existing SSH session.
+- It uploads the file to the remote path configured in settings.
+
+Why this matters:
+- It allows users to move files from the phone to the server without using a computer.
+
+11. Download file feature
+-------------------------
+The download feature is implemented by Download_File_Fragment and DownloadTask.
+
+What the user does:
+- Opens the fragment.
+- Sees a list of remote files/directories.
+- Clicks a directory to browse deeper.
+- Clicks a file to download it.
+
+How it works:
+- ListTask connects to the remote server using SFTP and lists the contents of the current directory.
+- The UI shows folders with a trailing slash.
+- When the user selects a file, the app opens the Android system save dialog.
+- The selected file is downloaded to the chosen location on the device.
+
+Why this matters:
+- It allows the user to retrieve files from the remote server onto their phone.
+
+12. HTTP feature
+----------------
+The HTTP feature is implemented by HTTP_Fragment.
+
+What the user does:
+- Opens a remote directory listing from /var/www/html/ by default.
+- Browses directories.
+- Selects a file.
+
+How it works:
+- The app uses the same ListTask logic to list files over the remote server.
+- When a file is selected, it opens NotepadActivity and passes the file path as an intent extra.
+- NotepadActivity then downloads the file via HTTPDownloadTask and displays its content in a text editor.
+
+Why this exists:
+- It provides a simple way to view and edit files that live in a web server directory.
+
+13. Notepad / text editing feature
+---------------------------------
+NotepadActivity is used for editing text files that are fetched from the server.
+
+What it does:
+- Receives the file path from the HTTP fragment.
+- Downloads the file content using HTTPDownloadTask.
+- Shows the content in an editable text area.
+- On save, it uploads the updated file using HTTPUploadTask.
+
+Why this feature exists:
+- It makes it possible to modify simple text files remotely through the app.
+
+14. Supporting utility classes
+------------------------------
+The app uses several helper classes:
+- SharedPreferenceManager: saves and reads small user settings.
+- ListTask: lists remote files using SFTP.
+- UploadTask: uploads a local file to the remote server.
+- DownloadTask: downloads a remote file to a local destination.
+- SleepTask: sends a suspend command over SSH.
+- WOLTask: orchestrates Wake-on-LAN signal sending.
+- MagicPacket: builds the correct Wake-on-LAN payload.
+- WOLManager: sends the UDP packet.
+
+These classes encapsulate the network logic and keep the UI screens simpler.
+
+15. Permissions and environment
+------------------------------
+The app requests these permissions in the manifest:
+- INTERNET
+- MANAGE_EXTERNAL_STORAGE
+- ACCESS_WIFI_STATE
+- ACCESS_NETWORK_STATE
+- ACCESS_NOTIFICATION_POLICY
+
+Why these are used:
+- INTERNET allows SSH and SFTP communication.
+- STORAGE permission is needed for file selection and file save operations.
+- WIFI and network state permissions help with network-aware operations.
+
+16. Dependencies used
+---------------------
+The project uses:
+- AndroidX AppCompat
+- Material Components
+- Navigation components
+- ViewBinding
+- Biometric library for fingerprint login
+- Lottie animations
+- JSch for SSH and SFTP
+
+17. Important implementation notes
+---------------------------------
+The app is functional and clearly intended as a remote management tool, but some parts are simple and experimental:
+- The login screen currently bypasses the password check in code, so it is effectively simplified for testing.
+- The app uses hard-coded paths such as /home/piyush/ and /var/www/html/ in some places.
+- Some operations depend on the remote server being configured correctly and the SSH session being alive.
+- Security could be improved by using more robust authentication, encrypted storage, and safer handling of passwords.
+
+18. Summary
+-----------
+In short, this project is a mobile remote-control app for a server. It allows users to:
+- connect to a server over SSH
+- run commands remotely
+- upload and download files
+- wake or sleep the machine
+- browse remote web-server files
+
+The app combines Android UI screens, background network tasks, SSH/SFTP operations, and persistent settings to create a simple remote-management experience.

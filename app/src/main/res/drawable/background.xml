@@ -5,5 +5,4 @@
         android:startColor="@color/sky"
         android:endColor="@color/white"
         android:angle="120"/>
-
 </shape>
