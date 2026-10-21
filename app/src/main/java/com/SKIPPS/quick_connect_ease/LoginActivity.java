@@ -39,20 +39,17 @@ public class LoginActivity extends AppCompatActivity {
         btn_login.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-// uncomment kara, just testing sathi logic gayab karel ahie
-//                String password = inputEditText.getText().toString();
-//                String set_password = SharedPreferenceManager.readString(LoginActivity.this, "app_password", "");
-//                if (set_password.equals(password)) {
-                Intent i = new Intent(LoginActivity.this, MainActivity.class);
-                startActivity(i);
-                finish();
-                new SSHInitTask(LoginActivity.this).execute();
-
-//                Toast.makeText(getApplicationContext(), "Login success", Toast.LENGTH_SHORT).show();
-//
-//                } else {
-//                    Toast.makeText(getApplicationContext(), "Login Failed", Toast.LENGTH_SHORT).show();
-//                }
+                String password = inputEditText.getText().toString();
+                String set_password = SharedPreferenceManager.readString(LoginActivity.this, "app_password", "");
+                if (set_password.equals(password)) {
+                    Toast.makeText(getApplicationContext(), "Login success", Toast.LENGTH_SHORT).show();
+                    Intent i = new Intent(LoginActivity.this, MainActivity.class);
+                    startActivity(i);
+                    finish();
+                    new SSHInitTask(LoginActivity.this).execute();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Login Failed", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -60,13 +57,18 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 BiometricManager biometricManager = BiometricManager.from(LoginActivity.this);
-                switch (biometricManager.canAuthenticate()) {
-                    case BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE:
-                        Toast.makeText(getApplicationContext(), "Device does not have figerprint", Toast.LENGTH_SHORT).show();
-                    case BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE:
-                        Toast.makeText(getApplicationContext(), "Not working", Toast.LENGTH_SHORT).show();
-                    case BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED:
-                        Toast.makeText(getApplicationContext(), "Fingerprint is not set", Toast.LENGTH_SHORT).show();
+                int canAuth = biometricManager.canAuthenticate(
+                        BiometricManager.Authenticators.BIOMETRIC_STRONG |
+                        BiometricManager.Authenticators.DEVICE_CREDENTIAL);
+                if (canAuth == BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE) {
+                    Toast.makeText(getApplicationContext(), "Device does not have fingerprint", Toast.LENGTH_SHORT).show();
+                    return;
+                } else if (canAuth == BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE) {
+                    Toast.makeText(getApplicationContext(), "Biometric hardware not available", Toast.LENGTH_SHORT).show();
+                    return;
+                } else if (canAuth == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED) {
+                    Toast.makeText(getApplicationContext(), "No fingerprint enrolled on this device", Toast.LENGTH_SHORT).show();
+                    return;
                 }
 
                 Executor executor = ContextCompat.getMainExecutor(LoginActivity.this);
@@ -75,6 +77,7 @@ public class LoginActivity extends AppCompatActivity {
                     @Override
                     public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
                         super.onAuthenticationError(errorCode, errString);
+                        Toast.makeText(getApplicationContext(), "Auth error: " + errString, Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
@@ -84,19 +87,23 @@ public class LoginActivity extends AppCompatActivity {
                         Intent i = new Intent(LoginActivity.this, MainActivity.class);
                         startActivity(i);
                         finish();
-
                         new SSHInitTask(LoginActivity.this).execute();
                     }
 
                     @Override
                     public void onAuthenticationFailed() {
                         super.onAuthenticationFailed();
+                        Toast.makeText(getApplicationContext(), "Authentication failed", Toast.LENGTH_SHORT).show();
                     }
                 });
 
-                promptInfo = new BiometricPrompt.PromptInfo.Builder().setTitle("Quick Connect Ease")
+                promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                        .setTitle("Quick Connect Ease")
                         .setDescription("Use Fingerprint to login")
-                        .setDeviceCredentialAllowed(true).build();
+                        .setAllowedAuthenticators(
+                                BiometricManager.Authenticators.BIOMETRIC_STRONG |
+                                BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+                        .build();
                 biometricPrompt.authenticate(promptInfo);
             }
         });

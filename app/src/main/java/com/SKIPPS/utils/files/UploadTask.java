@@ -41,10 +41,17 @@ public class UploadTask extends AsyncTask<Uri, Void, Void> {
                     ChannelSftp channel = (ChannelSftp) SSHManager.getSession().openChannel("sftp");
                     channel.connect();
                     String remotePath = SharedPreferenceManager.readString(context, "path", "/home/");
-                    String remoteFileName = filename;
+
+                    // Ensure the remote directory exists, create it if not
+                    try {
+                        channel.stat(remotePath);
+                    } catch (Exception dirMissing) {
+                        // Directory doesn't exist — create it
+                        channel.mkdir(remotePath);
+                    }
 
                     channel.cd(remotePath);
-                    channel.put(inputStream, remoteFileName);
+                    channel.put(inputStream, filename);
 
                     channel.disconnect();
                     inputStream.close();
@@ -64,7 +71,7 @@ public class UploadTask extends AsyncTask<Uri, Void, Void> {
             imageView.setImageResource(R.drawable.baseline_cloud_done_24);
             Toast.makeText(context, "File uploaded successfully", Toast.LENGTH_SHORT).show();
         } else {
-            Toast.makeText(context, "Error" + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
             imageView.setImageResource(R.drawable.baseline_cancel_24);
         }
     }

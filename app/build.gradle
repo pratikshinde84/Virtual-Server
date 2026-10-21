@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace 'com.example.secureserver'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.example.secureserver"
         minSdk 24
-        targetSdk 33
+        targetSdk 34 
         versionCode 1
         versionName "1.0"
 
@@ -33,19 +33,20 @@ android {
 
 dependencies {
 
+    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.8.22')
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.5.0'
+    implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'com.google.android.material:material:1.0.0'
-    implementation files('libs\\jsch-0.1.55.jar')
-    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.4.1'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.1'
-    implementation 'androidx.navigation:navigation-fragment:2.5.2'
-    implementation 'androidx.navigation:navigation-ui:2.5.2'
+    // Removed duplicate material:1.0.0 declaration
+    implementation files('libs/jsch-0.1.55.jar')
+    implementation 'androidx.lifecycle:lifecycle-livedata:2.6.1'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel:2.6.1'
+    implementation 'androidx.navigation:navigation-fragment:2.7.0'
+    implementation 'androidx.navigation:navigation-ui:2.7.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     implementation 'com.airbnb.android:lottie:6.0.1'
-    implementation 'androidx.biometric:biometric:1.1.0'
+    implementation 'androidx.biometric:biometric:1.2.0-alpha05'
 }

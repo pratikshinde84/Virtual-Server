@@ -22,9 +22,17 @@ public class SSHInitTask extends AsyncTask<Void, Void, Void> {
     protected Void doInBackground(Void... voids) {
         try {
             String ip = SharedPreferenceManager.readString(mContext, "ip_address", "");
-            int port = Integer.parseInt(SharedPreferenceManager.readString(mContext, "port", ""));
+            String portStr = SharedPreferenceManager.readString(mContext, "port", "22");
+            int port = portStr.isEmpty() ? 22 : Integer.parseInt(portStr);
             String username = SharedPreferenceManager.readString(mContext, "username", "");
             String password = SharedPreferenceManager.readString(mContext, "password", "");
+
+            if (ip.isEmpty() || username.isEmpty()) {
+                isSuccess = false;
+                this.e = new Exception("Server IP or username not configured. Please go to Settings.");
+                return null;
+            }
+
             SSHManager.createSession(ip, username, password, port);
             SSHManager.connect();
 

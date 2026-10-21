@@ -125,13 +125,14 @@ public class MainActivity extends AppCompatActivity {
                         public void onClick(DialogInterface dialog, int which) {
                             if (Power_Mgmt_Fragment.getAutoSleep())
                                 new SleepTask(MainActivity.this).execute();
-                            try {
-                                Thread.sleep(1000);
-                            } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
-                            }
-                            SSHManager.disconnect();
-                            MainActivity.super.onBackPressed();
+                            // Disconnect in a background thread to avoid blocking the UI
+                            new Handler().postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    SSHManager.disconnect();
+                                    MainActivity.super.onBackPressed();
+                                }
+                            }, 1200);
                         }
                     })
                     .setNegativeButton(android.R.string.no, null)

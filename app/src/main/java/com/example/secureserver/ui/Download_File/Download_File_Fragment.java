@@ -19,6 +19,7 @@ import androidx.fragment.app.Fragment;
 
 import com.SKIPPS.utils.files.DownloadTask;
 import com.SKIPPS.utils.files.ListTask;
+import com.SKIPPS.utils.shared_data.SharedPreferenceManager;
 import com.example.secureserver.R;
 
 public class Download_File_Fragment extends Fragment {
@@ -28,7 +29,8 @@ public class Download_File_Fragment extends Fragment {
     private ImageButton btnPrevious;
     private ImageView iv_status;
     private TextView tv_recent;
-    private String currentDirectory = "/home/piyush/";
+    // Reads the configured path from Settings instead of using a hardcoded developer path
+    private String currentDirectory;
     private String filenm;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -45,6 +47,13 @@ public class Download_File_Fragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Use the path configured in Settings — fallback to /home/ if nothing is set
+        currentDirectory = SharedPreferenceManager.readString(requireContext(), "path", "/home/");
+        // Ensure path ends with /
+        if (!currentDirectory.endsWith("/")) {
+            currentDirectory = currentDirectory + "/";
+        }
 
         textPathDownload.setText(currentDirectory);
 
